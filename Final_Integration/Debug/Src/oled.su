@@ -1,0 +1,9 @@
+oled.c:83:6:sendCMD	24	static
+oled.c:97:6:sendDATA	24	static
+oled.c:27:6:turnOnScreen	32	static
+oled.c:115:6:clearScreen	8	static
+oled.c:121:6:sendString	56	static
+oled.c:40:6:setupScreen	32	static
+oled.c:166:6:updateScreen	48	static
+oled.c:217:6:testScreen	16	static
+oled.c:256:6:convertArray	16	static

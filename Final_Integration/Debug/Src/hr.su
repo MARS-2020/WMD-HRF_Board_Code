@@ -1,0 +1,7 @@
+hr.c:15:6:HR_APP_MODE	16	static
+hr.c:34:6:HR_MFIO_SET	32	static
+hr.c:68:9:HR_INIT	56	static
+hr.c:184:9:HR_READ	48	static
+hr.c:270:9:HR_SHUTDOWN	48	static
+hr.c:350:6:pauseSensor	32	static
+hr.c:377:6:unpauseSensor	48	static
