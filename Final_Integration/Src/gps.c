@@ -26,13 +26,14 @@ uint8_t GPS_GGA[] = "$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n";
 uint8_t GPS_1HZ[] = "$PMTK220,1000*1F\r\n";
 uint8_t GPS_5HZ[] = "$PMTK220,200*2C\r\n";
 uint8_t GPS_10HZ[] = "$PMTK220,100*2F\r\n";
+uint8_t GPS_01HZ[] = "$PMTK220,10000*2F\r\n";
 uint8_t GPS_STANDBY[] = "$PMTK161,0*28\r\n";
 
 void GPS_INIT(void)
 {
 	  HAL_UART_Transmit(&huart1, GPS_BAUDRATE, sizeof(GPS_BAUDRATE), 1000); //set baud rate
 	  //HAL_UART_Transmit(&huart1, GPS_FIXRATE, sizeof(GPS_FIXRATE), 1000); //set fix rate
-	  HAL_UART_Transmit(&huart1, GPS_1HZ, sizeof(GPS_1HZ), 1000); //set frequency
+	  HAL_UART_Transmit(&huart1, GPS_01HZ, sizeof(GPS_01HZ), 1000); //set frequency
 	  HAL_UART_Transmit(&huart1, GPS_GGA, sizeof(GPS_GGA), 1000); //set sentence format
 }
 

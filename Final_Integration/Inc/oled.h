@@ -16,6 +16,6 @@
 	void sendString(char *string, uint8_t header);
 	void clearScreen();
 	void updateScreen(char* hr, char* spo2, char* distance, char* user);
-	void testScreen(void);
-	void convertArray(uint8_t hr, uint8_t spo2);
+	void setUserName(char* userName);
+	void user1Info(uint8_t hr, uint8_t spo2);
 #endif

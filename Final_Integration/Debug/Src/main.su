@@ -1,5 +1,5 @@
-main.c:287:6:SystemClock_Config	120	static
+main.c:281:6:SystemClock_Config	120	static
 main.c:121:5:main	80	static
-main.c:603:6:HAL_UART_RxCpltCallback	12	static
-main.c:616:6:HAL_GPIO_EXTI_Callback	0	static
-main.c:671:6:Error_Handler	0	static
+main.c:569:6:HAL_UART_RxCpltCallback	16	static
+main.c:585:6:HAL_GPIO_EXTI_Callback	16	dynamic
+main.c:628:6:Error_Handler	0	static

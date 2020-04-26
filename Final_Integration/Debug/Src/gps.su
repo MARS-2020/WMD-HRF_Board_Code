@@ -1,2 +1,2 @@
-gps.c:31:6:GPS_INIT	16	static
-gps.c:39:9:parseData	32	static
+gps.c:32:6:GPS_INIT	16	static
+gps.c:40:9:parseData	32	static

@@ -28,6 +28,7 @@ void writeReg(uint8_t addr, uint8_t value)
 {
 	uint8_t reg = addr | 0x80;
 	uint8_t val = value;
+	while(HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY);
 	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_RESET); //pull NSS low to start frame
 	HAL_SPI_Transmit(&hspi1, &reg, (uint16_t)sizeof(reg), 1000);
 	while(HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY);
@@ -41,6 +42,7 @@ uint8_t readReg(uint8_t addr)
 {
 	uint8_t reg = addr & ~0x80;
 	uint8_t data = 0;
+	while(HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY);
 	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_RESET); //pull NSS low to start frame
 	//HAL_SPI_TransmitReceive(&hspi1, &reg, &data, 1, 1000);
 	HAL_SPI_Transmit(&hspi1, &reg, sizeof(reg), 1000); //send a read command from that address
@@ -55,6 +57,7 @@ uint8_t readReg(uint8_t addr)
 void readFIFO(uint8_t buff[], uint16_t size)
 {
 	uint8_t reg = RH_RF95_REG_00_FIFO & ~0x80;
+	while(HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY);
 	HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_RESET); //pull NSS low to start frame
 	HAL_SPI_Transmit(&hspi1, &reg, sizeof(reg), 1000); //send a read command from that address
 	while(HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY);
@@ -89,6 +92,7 @@ void writeReg_Burst(uint8_t addr, uint8_t data[], uint8_t length)
 	uint8_t val = 0;
 	if (length >= 1)
 	{
+		while(HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY);
 		HAL_GPIO_WritePin(LORA_NSS_GPIO_Port, LORA_NSS_Pin, GPIO_PIN_RESET); //pull NSS low to start frame
 		HAL_SPI_Transmit(&hspi1, &reg, (uint16_t)sizeof(reg), 1000);
 		while(HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY);

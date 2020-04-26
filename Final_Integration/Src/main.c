@@ -53,6 +53,7 @@ SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 
 UART_HandleTypeDef huart1;
+DMA_HandleTypeDef hdma_usart1_rx;
 
 /* USER CODE BEGIN PV */
 
@@ -61,6 +62,7 @@ UART_HandleTypeDef huart1;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_SPI2_Init(void);
@@ -71,8 +73,8 @@ static void MX_I2C1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint8_t data[125] = {0};
-uint8_t tempdata[125] = {0};
+volatile uint8_t data[70] = {0};
+uint8_t tempdata[70] = {0};
 
 uint16_t heartrate  = 0;
 uint8_t  HR_conf    = 0;
@@ -108,6 +110,7 @@ extern char user[];
 extern uint8_t isSelfSetup;
 extern uint8_t isOtherSetup;
 extern char hr[];
+extern uint8_t MAX_BUFF;
 
 /* USER CODE END 0 */
 
@@ -140,6 +143,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_SPI1_Init();
   MX_USART1_UART_Init();
   MX_SPI2_Init();
@@ -147,46 +151,53 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   //INITIALIZE MODULES
-
-  //HAL_GPIO_WritePin(GPIOB, DEBUG_Pin, GPIO_PIN_SET);
-
   turnOnScreen(); //screen
-
-  //HAL_GPIO_WritePin(GPIOB, DEBUG_Pin, GPIO_PIN_RESET);
-
   GPS_INIT(); //gps
   LORA_INIT(); //lora
-
-/*.
   HR_APP_MODE(); //call function to put module in application mode
+  HR_INIT();
   HR_MFIO_SET();
+  shut30101();
 
-  if(HR_INIT() == 1)
+  //HAL_UART_Receive_IT(&huart1, tempdata, sizeof(tempdata));
+  if(HAL_UART_Receive_DMA(&huart1, tempdata, sizeof(tempdata)) != HAL_OK)
   {
-	  asm("NOP");
+      Error_Handler();
   }
-
-  pauseSensor();
-  */
-
-  HAL_UART_Receive_IT(&huart1, tempdata, sizeof(tempdata));
-
   /* USER CODE END 2 */
  
- 
-
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_UART_Receive_IT(&huart1, tempdata, sizeof(tempdata));
+	  //HAL_UART_Receive_IT(&huart1, tempdata, sizeof(tempdata));
+	  /*
+	  if ((&huart1)->RxState == HAL_UART_STATE_READY)
+	  {
+
+		  HAL_UART_Receive_DMA(&huart1, tempdata, sizeof(tempdata)/sizeof(tempdata[0]));
+		  //while(!((&huart1)->RxState == HAL_UART_STATE_READY))
+			  {
+				  if ((&huart1)->gState == HAL_UART_STATE_ERROR)
+				  {
+					  asm("nop");
+				  }
+				  if ((&huart1)->gState == HAL_UART_STATE_TIMEOUT)
+				  {
+					  asm("nop");
+				  }
+			  }
+		  //__HAL_UART_FLUSH_DRREGISTER(&huart1);
+	  }
+	  */
+
 	  if(GPS_FLAG)
 	  {
 		  uint8_t found = 0;
 		  uint8_t commaCnt = 0;
 		  uint8_t j = 0;
 
-		  for(int i = 0; i < (sizeof(tempdata)); i++)
+		  for(int i = 0; i < ((sizeof(tempdata) - 1)); i++)
 		  {
 			  if (commaCnt < 8)
 			  {
@@ -221,30 +232,18 @@ int main(void)
 			  writeReg(RH_RF95_REG_01_OP_MODE, 0x05);
 			  writeReg(RH_RF95_REG_40_DIO_MAPPING1, 0x00);
 
-			  /*
-				if(isSelfSetup)
-				{
-					setupScreen();
-					isSelfSetup = 0;
-				}
+			  //testScreen();
 
-			  NVIC_DisableIRQ(USART1_IRQn);
-			  unpauseSensor();
-			  NVIC_EnableIRQ(EXTI4_15_IRQn);
-			  */
-
-			  testScreen();
+			  start30101();
 		  }
 		  GPS_FLAG = 0;
 	  }
 	  /*
 	  else if(HR_FLAG)
 	  {
-		  HR_READ(receive_data);
-		  if ((heartrate > 50) && (SPO2 > 50) && (alg_status == 3))
-		  {
-			  testScreen();
-		  }
+		  uint8_t received_data[MAX_BUFF];
+		  HR_READ(received_data);
+		  testScreen();
 		  HR_FLAG = 0;
 	  }
 	  */
@@ -473,8 +472,25 @@ static void MX_USART1_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART1_Init 2 */
-
+   HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
+   HAL_NVIC_EnableIRQ(USART1_IRQn);
   /* USER CODE END USART1_Init 2 */
+
+}
+
+/** 
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void) 
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel2_3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
 
 }
 
@@ -555,12 +571,15 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	NVIC_DisableIRQ(EXTI4_15_IRQn);
 	NVIC_DisableIRQ(EXTI0_1_IRQn);
 	NVIC_DisableIRQ(USART1_IRQn);
+	//NVIC_DisableIRQ(DMA1_Channel2_3_IRQn);
 
 	GPS_FLAG = 1; //GPS
+	__HAL_UART_FLUSH_DRREGISTER(&huart1); // Clear the buffer to prevent overrun
 
 	NVIC_EnableIRQ(EXTI4_15_IRQn);
 	NVIC_EnableIRQ(EXTI0_1_IRQn);
 	NVIC_EnableIRQ(USART1_IRQn);
+	//NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
@@ -568,23 +587,13 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	NVIC_DisableIRQ(EXTI4_15_IRQn);
 	NVIC_DisableIRQ(EXTI0_1_IRQn);
 	NVIC_DisableIRQ(USART1_IRQn);
-/*
+	//NVIC_DisableIRQ(DMA1_Channel2_3_IRQn);
+
 	if(GPIO_Pin == HR_MFIO_Pin) //HR
 	{
-		HR_READ(receive_data);
-		if ((heartrate > 50) && (SPO2 > 50) && (alg_state == 3))
-		{
-			HR_FLAG = 1;
-			NVIC_DisableIRQ(EXTI4_15_IRQn);
-			pauseSensor();
-			convertArray(heartrate, SPO2);
-			user[0] = '1';
-			updateScreen(HR_Valid, SPO2_Valid, hr, user);
-			//testScreen();
-		}
-		//HR_FLAG = 1;
+		uint8_t received_data[MAX_BUFF];
+		HR_READ(received_data);
 	}
-	*/
 	if (GPIO_Pin == GPIO_PIN_1) //LORA RECEIVE
 	{
 		LORA_FLAG = 1;
@@ -594,22 +603,20 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		DIM_FLAG = 1;
 	}
 
-	/*
-	if (HR_FLAG)
-	{
-		//NVIC_DisableIRQ(EXTI4_15_IRQn);
-		NVIC_EnableIRQ(USART1_IRQn);
-	}
-	else
+	if(!HR_FLAG)
 	{
 		NVIC_EnableIRQ(EXTI4_15_IRQn);
 	}
-	NVIC_EnableIRQ(EXTI0_1_IRQn);
-	*/
-	NVIC_EnableIRQ(USART1_IRQn);
-	NVIC_EnableIRQ(EXTI4_15_IRQn);
-	NVIC_EnableIRQ(EXTI0_1_IRQn);
-
+	else
+	{
+		HR_FLAG = 0;
+		//testScreen();
+		user1Info(heartrate, SPO2);
+		NVIC_DisableIRQ(EXTI4_15_IRQn);
+		NVIC_EnableIRQ(EXTI0_1_IRQn);
+		NVIC_EnableIRQ(USART1_IRQn);
+		//NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
+	}
 }
 
 /* USER CODE END 4 */

@@ -11,18 +11,7 @@
 #include "fonts.h"
 extern SPI_HandleTypeDef hspi2;
 
-extern char HR_Valid[4];
-extern char SPO2_Valid[4];
-
-uint8_t isSelfSetup = 1;
-uint8_t isOtherSetup = 1;
-char hr[]="000";
-char spo2[] = {'0','0','0'};
-char distance[]="N000";
-char user[]={'1'};
-char hrnew[] = "50";
-char spo2new[] = "89";
-char fixnew[] = "0";
+uint8_t isSelfSetup = 0;
 
 void turnOnScreen(){
 HAL_GPIO_WritePin(oled_RES_GPIO_Port, oled_RES_Pin, GPIO_PIN_SET);
@@ -74,7 +63,7 @@ void setupScreen(){
 	page[2]=0x03;
 	col[1]=0x00;
 	col[2]=0x7F;
-	message = "   @*@    %     @M     ";
+	message = "   @*@    %       @M     ";
 	sendCMD(page,(uint16_t)sizeof(page));
 	sendCMD(col, (uint16_t)sizeof(col));
 	sendString(message,0x00);
@@ -207,107 +196,60 @@ void updateScreen(char* hr, char* spo2, char* distance, char* user){
 		sendCMD(col, (uint16_t)sizeof(col));
 		sendString(spo2,0x00);
 		col[1]=0x41;
-		col[2]=0x59;
+		col[2]=0x71;
 		sendCMD(col, (uint16_t)sizeof(col));
 		sendString(distance,0x00);
 	}
 }
 
 
-void testScreen()
-{
-
-	if(isSelfSetup)
-		  		  {
-		  			  setupScreen();
-		  			  isSelfSetup = 0;
-
-		  		  }
-
-		  		  if(hr[2]=='9'){
-		  			  if(hr[1]=='9'){
-		  				  if (hr[0]=='9'){
-		  					  hr[0]='0';
-		  				  }
-		  				  else{
-		  					  hr[0]=hr[0]+1;
-		  				  }
-		  				  hr[1]='0';
-		  			  }
-		  			  else{
-		  				  hr[1]=hr[1]+1;
-		  			  }
-		  			  hr[2]='0';
-		  		  }
-		  		  else{
-		  			  hr[2]=hr[2]+1;
-		  		  }
-
-		  		  distance[1]=hr[0];
-		  		  distance[2]=hr[1];
-		  		  distance[3]=hr[2];
-		  		  user[0]='1';
-		  		  updateScreen(hr, hr, hr, user);
-		  		  user[0]='2';
-		  		  updateScreen(hr, hr, distance, user);
-
+void setUserName(char* userName){
+	uint8_t page[] = {0x22, 0x00,0x00};
+	uint8_t col[]= {0x21, 0x00, 0x7F};
+	page[1]=0x02;
+	page[2]=0x02;
+	col[1]=0x00;
+	col[2]=0x7F;
+	sendCMD(page,(uint16_t)sizeof(page));
+	sendCMD(col, (uint16_t)sizeof(col));
+	sendString(userName,0x00);
 }
 
-void convertArray(uint8_t hr, uint8_t spo2)
-{
-	if (hr >= 100)
-	{
-		HR_Valid[3] = '\0';
-		HR_Valid[2] = (hr % 10) + '0';
-		HR_Valid[1] = ((hr/10) % 10) + '0';
-		HR_Valid[0] = ((hr/100) % 10) + '0';
-	}
-	else
-	{
-		HR_Valid[3] = '\0';
-		HR_Valid[2] = (hr % 10) + '0';
-		HR_Valid[1] = ((hr/10) % 10) + '0';
-		HR_Valid[0] = ' ';
-	}
+void user1Info(uint8_t hr, uint8_t spo2){
+    char selfHR [4] = {'0','0','0','\0'};
+    char selfSpo2[4] = {'0','0','0','\0'};
+    char* fix = "FIX";
+    if((hr/100%10) == 0){
 
-	if (spo2 >= 100)
-	{
-		SPO2_Valid[3] = '\0';
-		SPO2_Valid[2] = (spo2 % 10) + '0';
-		SPO2_Valid[1] = ((spo2/10) % 10) + '0';
-		SPO2_Valid[0] = ((spo2/100) % 10) + '0';
-	}
-	else
-	{
-		SPO2_Valid[3] = '\0';
-		SPO2_Valid[2] = (spo2 % 10) + '0';
-		SPO2_Valid[1] = ((spo2/10) % 10) + '0';
-		SPO2_Valid[0] = ' ';
-	}
+        selfHR[2] = (hr%10)+'0';
+        selfHR[1] = (hr/10%10)+'0';
+        selfHR[0] = ' ';
+    }
+    else{
 
-	testScreen();
+        selfHR[2] = (hr%10)+'0';
+        selfHR[1] = (hr/10%10)+'0';
+        selfHR[0] = (hr/100%10)+'0';
+    }
+    if((spo2/100%10) == 0){
 
-	/*
+        selfSpo2[2] = (spo2%10)+'0';
+        selfSpo2[1] = (spo2/10%10)+'0';
+        selfSpo2[0] = ' ';
+    }
+    else{
 
-	if(hr[2]=='9'){
-		if(hr[1]=='9'){
-			if (hr[0]=='9'){
-				hr[0]='0';
-			}
-			else{
-				hr[0]=hr[0]+1;
-			}
-			hr[1]='0';
-		}
-		else{
-			hr[1]=hr[1]+1;
-		}
-		hr[2]='0';
-	}
-	else{
-		hr[2]=hr[2]+1;
-	}
-	*/
+        selfSpo2[2] = (spo2%10)+'0';
+        selfSpo2[1] = (spo2/10%10)+'0';
+        selfSpo2[0] = (spo2/100%10)+'0';
+    }
 
-	return;
+    if(!isSelfSetup)
+    {
+    	setupScreen();
+    	isSelfSetup = 1;
+    }
+
+    char user[1] = {'1'};
+    updateScreen(selfHR, selfSpo2, fix, user);
 }
