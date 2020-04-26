@@ -203,13 +203,13 @@ uint8_t HR_READ(uint8_t * data)
 			//stop();
 
 			//read_flag = 3;
-			sampleCnt++;
-			if(sampleCnt > 10)
-			{
-				sampleCnt = 0;
+			//sampleCnt++;
+			//if(sampleCnt > 10)
+			//{
+				//sampleCnt = 0;
 				HR_FLAG = 1;
 				shut30101();
-			}
+			//}
 		}
 
 		return 1;
