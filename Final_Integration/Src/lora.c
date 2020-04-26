@@ -7,6 +7,8 @@
 
 #include "lora.h"
 #include "main.h"
+#include "receive_packet.h"
+#include <string.h>
 
 uint8_t send[] = "Jacob";
 uint8_t send1[] = "Austin";
@@ -18,6 +20,7 @@ uint8_t headerID = 0;
 uint8_t headerFlags = 0;
 
 uint8_t receive[80]; //receive data buffer
+uint8_t toParse[41];
 
 extern SPI_HandleTypeDef hspi1;
 
@@ -83,6 +86,8 @@ void receiveData()
 
 	writeReg(RH_RF95_REG_01_OP_MODE, 0x05);
 	writeReg(RH_RF95_REG_40_DIO_MAPPING1, 0x00);
+	memcpy(&toParse, &receive[4], 40);
+	parse_packet(toParse);
 }
 
 //Function to burst write (primarily for FIFO)

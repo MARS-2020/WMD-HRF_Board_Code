@@ -60,9 +60,6 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define HR_MFIO_Pin GPIO_PIN_15
 #define HR_MFIO_GPIO_Port GPIOC
-#define dim_Pin GPIO_PIN_0
-#define dim_GPIO_Port GPIOA
-#define dim_EXTI_IRQn EXTI0_1_IRQn
 #define LORA_NSS_Pin GPIO_PIN_4
 #define LORA_NSS_GPIO_Port GPIOA
 #define LORA_RST_Pin GPIO_PIN_0
@@ -78,8 +75,12 @@ void Error_Handler(void);
 #define oled_RES_GPIO_Port GPIOA
 #define HR_RESET_Pin GPIO_PIN_5
 #define HR_RESET_GPIO_Port GPIOB
-#define DEBUG_Pin GPIO_PIN_8
-#define DEBUG_GPIO_Port GPIOB
+#define DIM_Pin GPIO_PIN_8
+#define DIM_GPIO_Port GPIOB
+#define DIM_EXTI_IRQn EXTI4_15_IRQn
+#define SOS_Pin GPIO_PIN_9
+#define SOS_GPIO_Port GPIOB
+#define SOS_EXTI_IRQn EXTI4_15_IRQn
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

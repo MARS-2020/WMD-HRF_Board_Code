@@ -17,5 +17,7 @@
 	void clearScreen();
 	void updateScreen(char* hr, char* spo2, char* distance, char* user);
 	void setUserName(char* userName);
+	void sendSOS();
+	void clearSOS();
 	void user1Info(uint8_t hr, uint8_t spo2);
 #endif

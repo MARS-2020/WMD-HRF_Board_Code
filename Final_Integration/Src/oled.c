@@ -10,7 +10,6 @@
 #include "oled.h"
 #include "fonts.h"
 extern SPI_HandleTypeDef hspi2;
-
 uint8_t isSelfSetup = 0;
 
 void turnOnScreen(){
@@ -107,7 +106,7 @@ void clearScreen(){
 	  }
 }
 
-void sendString(char *string, uint8_t header){
+/*void sendString(char *string, uint8_t header){
 
 	for(int i =0; string[i]!='\0'; i++){
 		uint8_t letter[6];
@@ -133,6 +132,52 @@ void sendString(char *string, uint8_t header){
 			else if(string[i]=='.'){
 				letter[j]=fonts[39*6+2+j];
 				wordSize = 2;
+
+			}
+			else if(string[i]==' '){
+				letter[j] = fonts[38*6+j];
+				//wordSize=2;
+			}
+			else if(string[i]=='@'){
+				letter[j] = fonts[38*6+j];
+				wordSize=2;
+			}
+			else if(string[i]=='*'){
+				letter[j] = fonts[37*6+j];
+			}
+			letter[j]=letter[j]|header;
+		}
+		sendDATA(letter, wordSize);
+	}
+}*/
+
+void sendString(char *string, uint8_t header){
+
+	for(int i =0; string[i]!='\0'; i++){
+		uint8_t letter[6];
+		uint16_t wordSize = (uint16_t)sizeof(letter);
+		//IF STRING I LETTER
+
+		for(int j =0; j<6; j++){
+			wordSize = (uint16_t)sizeof(letter);
+			if (string[i]>='A' && string[i] <= 'Z'){
+				letter[j] = fonts[(string[i]-'A')*6+j];
+			}
+			else if(string[i] >= '0' && string[i] <= '9'){
+				letter[j] = fonts[(string[i]-'0'+26)*6+j];
+			}
+			else if(string[i]=='%'){
+				letter[j] = fonts[36*6+j];
+			}
+			else if(string[i]==':'){
+				letter[j]=fonts[39*6+j];
+				wordSize = 2;
+
+			}
+			else if(string[i]=='.'){
+				letter[j]=fonts[39*6+2+j];
+				//letter[
+				//wordSize = 2;
 
 			}
 			else if(string[i]==' '){
@@ -213,6 +258,27 @@ void setUserName(char* userName){
 	sendCMD(page,(uint16_t)sizeof(page));
 	sendCMD(col, (uint16_t)sizeof(col));
 	sendString(userName,0x00);
+}
+
+
+void sendSOS(){
+    uint8_t page[] = {0x22, 0x04,0x04};
+    uint8_t col[]= {0x21, 0x00, 0x7F};
+    char* message = "S.O.S SENT";
+    sendCMD(page,(uint16_t)sizeof(page));
+    sendCMD(col, (uint16_t)sizeof(col));
+    sendString(message,0x00);
+
+}
+
+
+void clearSOS() {
+    uint8_t page[] = {0x22, 0x04,0x04};
+    uint8_t col[]= {0x21, 0x00, 0x7F};
+    char* message = "          ";
+    sendCMD(page,(uint16_t)sizeof(page));
+    sendCMD(col, (uint16_t)sizeof(col));
+    sendString(message,0x00);
 }
 
 void user1Info(uint8_t hr, uint8_t spo2){

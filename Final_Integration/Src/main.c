@@ -52,6 +52,8 @@ I2C_HandleTypeDef hi2c1;
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 
+TIM_HandleTypeDef htim2;
+
 UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_rx;
 
@@ -67,6 +69,7 @@ static void MX_SPI1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -98,6 +101,7 @@ uint8_t GPS_FLAG = 0;
 uint8_t LORA_FLAG = 0;
 uint8_t DIM_FLAG = 0;
 uint8_t HR_FLAG = 0;
+uint8_t SOS_FLAG = 0;
 
 uint8_t contrastLow[]={0x81, 0x0F};
 uint8_t contrastHigh[]={0x81, 0xFF};
@@ -111,6 +115,9 @@ extern uint8_t isSelfSetup;
 extern uint8_t isOtherSetup;
 extern char hr[];
 extern uint8_t MAX_BUFF;
+
+uint8_t timer_flag = 0;
+uint8_t sos[] = "s,1,\r\n";
 
 /* USER CODE END 0 */
 
@@ -148,6 +155,7 @@ int main(void)
   MX_USART1_UART_Init();
   MX_SPI2_Init();
   MX_I2C1_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
   //INITIALIZE MODULES
@@ -220,13 +228,17 @@ int main(void)
 					  test[i] = (uint8_t) sendMeasurements[i];
 				  }
 
-				  sendPacket(test, sizeof(test));
-				  writeReg(RH_RF95_REG_01_OP_MODE, 0x05);
-				  writeReg(RH_RF95_REG_40_DIO_MAPPING1, 0x00);
+				  uint8_t buf[] = "y,1,100,100\r\n";
+				  sendPacket(buf, sizeof(buf));
+				  //writeReg(RH_RF95_REG_01_OP_MODE, 0x05);
+				  //writeReg(RH_RF95_REG_40_DIO_MAPPING1, 0x00);
 
 				  //testScreen();
 				  HAL_Delay(500);
-				  start30101();
+				  if (!SOS_FLAG)
+				  {
+					  start30101();
+				  }
 			  }
 		  }
 		  GPS_FLAG = 0;
@@ -436,6 +448,51 @@ static void MX_SPI2_Init(void)
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 200000;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 1500;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
   * @brief USART1 Initialization Function
   * @param None
   * @retval None
@@ -511,7 +568,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOB, LORA_RST_Pin|HR_RESET_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, oled_NSS_Pin|oled_DC_Pin|DEBUG_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, oled_NSS_Pin|oled_DC_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(oled_RES_GPIO_Port, oled_RES_Pin, GPIO_PIN_RESET);
@@ -523,12 +580,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(HR_MFIO_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : dim_Pin */
-  GPIO_InitStruct.Pin = dim_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(dim_GPIO_Port, &GPIO_InitStruct);
-
   /*Configure GPIO pins : LORA_NSS_Pin oled_RES_Pin */
   GPIO_InitStruct.Pin = LORA_NSS_Pin|oled_RES_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -536,10 +587,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LORA_RST_Pin oled_NSS_Pin oled_DC_Pin HR_RESET_Pin 
-                           DEBUG_Pin */
-  GPIO_InitStruct.Pin = LORA_RST_Pin|oled_NSS_Pin|oled_DC_Pin|HR_RESET_Pin 
-                          |DEBUG_Pin;
+  /*Configure GPIO pins : LORA_RST_Pin oled_NSS_Pin oled_DC_Pin HR_RESET_Pin */
+  GPIO_InitStruct.Pin = LORA_RST_Pin|oled_NSS_Pin|oled_DC_Pin|HR_RESET_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -551,9 +600,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(LORA_DIO_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : DIM_Pin SOS_Pin */
+  GPIO_InitStruct.Pin = DIM_Pin|SOS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI0_1_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI4_15_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
 
 }
 
@@ -607,11 +665,46 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	{
 		LORA_FLAG = 1;
 	}
-	else if (GPIO_Pin == GPIO_PIN_0) //DIM SCREEN
+	else if (GPIO_Pin == DIM_Pin) //DIM SCREEN
 	{
 		DIM_FLAG = 1;
 	}
+	else if (GPIO_Pin == SOS_Pin)
+	{
+		HAL_TIM_Base_Start_IT(&htim2);
+		SOS_FLAG = 1;
+	}
 
+	NVIC_EnableIRQ(EXTI4_15_IRQn);
+	NVIC_EnableIRQ(EXTI0_1_IRQn);
+	NVIC_EnableIRQ(USART1_IRQn);
+	NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim2) {
+	NVIC_DisableIRQ(EXTI4_15_IRQn);
+	NVIC_DisableIRQ(EXTI0_1_IRQn);
+	NVIC_DisableIRQ(USART1_IRQn);
+	NVIC_DisableIRQ(DMA1_Channel2_3_IRQn);
+
+	if(SOS_FLAG == 1) {
+		HAL_TIM_Base_Stop_IT(htim2);
+		clearSOS();
+		SOS_FLAG = 0;
+	}
+	if(timer_flag == 1) {
+		__HAL_TIM_CLEAR_IT(htim2 ,TIM_IT_UPDATE);
+		timer_flag = 0;
+		if(!HAL_GPIO_ReadPin(GPIOB, SOS_Pin)) {
+			sendPacket(sos, sizeof(sos));
+			sendSOS();
+			SOS_FLAG = 1;
+		}
+	} else {
+		timer_flag = 1;
+	}
+
+	//NVIC_EnableIRQ(EXTI4_15_IRQn);
 	NVIC_EnableIRQ(EXTI4_15_IRQn);
 	NVIC_EnableIRQ(EXTI0_1_IRQn);
 	NVIC_EnableIRQ(USART1_IRQn);
