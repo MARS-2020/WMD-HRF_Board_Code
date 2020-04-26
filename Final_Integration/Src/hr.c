@@ -201,13 +201,14 @@ uint8_t HR_READ(uint8_t * data)
 		if(((heartrate > 50) && (heartrate < 255)) && ((SPO2 > 50) && (SPO2 < 101)))
 		{
 			//stop();
-			shut30101();
+
 			//read_flag = 3;
 			sampleCnt++;
-			if(sampleCnt > 3)
+			if(sampleCnt > 10)
 			{
 				sampleCnt = 0;
 				HR_FLAG = 1;
+				shut30101();
 			}
 		}
 
