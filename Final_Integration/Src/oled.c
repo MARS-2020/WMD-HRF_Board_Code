@@ -319,3 +319,25 @@ void user1Info(uint8_t hr, uint8_t spo2){
     char user[1] = {'1'};
     updateScreen(selfHR, selfSpo2, fix, user);
 }
+
+void displayActiveHR(void)
+{
+	uint8_t page[] = {0x22, 0x07,0x07};
+	uint8_t col[]= {0x21, 0x79, 0x7F};
+
+	sendCMD(page,(uint16_t)sizeof(page));
+	sendCMD(col, (uint16_t)sizeof(col));
+	char* message = ".";
+	sendString(message,0x00);
+}
+
+void removeActiveHR(void)
+{
+	uint8_t page[] = {0x22, 0x07,0x07};
+	uint8_t col[]= {0x21, 0x79, 0x7F};
+
+	sendCMD(page,(uint16_t)sizeof(page));
+	sendCMD(col, (uint16_t)sizeof(col));
+	char* message = " ";
+	sendString(message,0x00);
+}

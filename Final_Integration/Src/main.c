@@ -119,6 +119,12 @@ extern uint8_t MAX_BUFF;
 uint8_t timer_flag = 0;
 uint8_t sos[] = "s,1,\r\n";
 
+uint8_t GPS_READY = 0; //flag for when valid gps has been received and is ready to be sent to the screen
+uint8_t HR_READY = 0; //flag for when valid hr has been received and is ready to be sent to the screen
+uint8_t LORA_RECEIVED = 0;
+uint8_t NAME_RECEIVED = 0;
+uint8_t FIRST = 1;
+
 /* USER CODE END 0 */
 
 /**
@@ -159,7 +165,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   //INITIALIZE MODULES
-  turnOnScreen(); //screen
+  turnOnScreen(); //screen"4027.5184"
   GPS_INIT(); //gps
   LORA_INIT(); //lora
   HR_APP_MODE(); //call function to put module in application mode
@@ -167,10 +173,15 @@ int main(void)
   HR_MFIO_SET();
   shut30101();
 
-  //HAL_UART_Receive_IT(&huart1, tempdata, sizeof(tempdata));
+  /*
   if(HAL_UART_Receive_DMA(&huart1, tempdata, sizeof(tempdata)) != HAL_OK)
   {
       Error_Handler();
+  }
+  */
+  if ((&huart1)->RxState == HAL_UART_STATE_READY)
+  {
+	  HAL_UART_Receive_DMA(&huart1, tempdata, sizeof(tempdata)/sizeof(tempdata[0]));
   }
   /* USER CODE END 2 */
  
@@ -180,80 +191,81 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  //HAL_UART_Receive_IT(&huart1, tempdata, sizeof(tempdata));
-
-	  if ((&huart1)->RxState == HAL_UART_STATE_READY)
+	  if (LORA_RECEIVED || (NAME_RECEIVED && FIRST))
 	  {
-		  HAL_UART_Receive_DMA(&huart1, tempdata, sizeof(tempdata)/sizeof(tempdata[0]));
-		  //while(!((&huart1)->RxState == HAL_UART_STATE_READY));
-		  //__HAL_UART_FLUSH_DRREGISTER(&huart1);
-	  }
-
-	  if(GPS_FLAG)
-	  {
-		  uint8_t found = 0;
-		  uint8_t commaCnt = 0;
-		  uint8_t j = 0;
-
-		  if (tempdata[0] != '0') //if there is a fix
+		  if ((&huart1)->RxState == HAL_UART_STATE_READY)
 		  {
-			  for(int i = 0; i < ((sizeof(tempdata) - 1)); i++)
+			  HAL_UART_Receive_DMA(&huart1, tempdata, sizeof(tempdata)/sizeof(tempdata[0]));
+		  }
+
+		  if(GPS_FLAG && (!GPS_READY))
+		  {
+			  uint8_t found = 0;
+			  uint8_t commaCnt = 0;
+			  uint8_t j = 0;
+
+			  if (tempdata[0] != '0') //if there is a fix
 			  {
-				  if (commaCnt < 8)
+				  for(int i = 0; i < ((sizeof(tempdata) - 1)); i++)
 				  {
-					  if ((tempdata[i] == '$') && (tempdata[i+1] == 'G'))
+					  if (commaCnt < 8)
 					  {
-						  found = 1;
-					  }
-					  if (found)
-					  {
-						  data[j] = tempdata[i];
-						  j++;
-						  if (tempdata[i] == ',')
+						  if ((tempdata[i] == '$') && (tempdata[i+1] == 'G'))
 						  {
-							  commaCnt++;
+							  found = 1;
+						  }
+						  if (found)
+						  {
+							  data[j] = tempdata[i];
+							  j++;
+							  if (tempdata[i] == ',')
+							  {
+								  commaCnt++;
+							  }
 						  }
 					  }
-				  }
-				  else
-					  break;
-			  }
-
-			  if (parseData())
-			  {
-
-				  uint8_t test[27]; //CHANGE THIS SIZE ONCE THE PACKET GETS HR DATA
-				  for(int i = 0; i < (sizeof(test) / sizeof(test[0])); i++)
-				  {
-					  test[i] = (uint8_t) sendMeasurements[i];
+					  else
+						  break;
 				  }
 
-				  uint8_t buf[] = "y,1,100,100\r\n";
-				  sendPacket(buf, sizeof(buf));
-				  //writeReg(RH_RF95_REG_01_OP_MODE, 0x05);
-				  //writeReg(RH_RF95_REG_40_DIO_MAPPING1, 0x00);
-
-				  //testScreen();
-				  HAL_Delay(500);
-				  if (!SOS_FLAG)
+				  if (parseData())
 				  {
-					  start30101();
+					  GPS_READY = 1;
+					  LORA_RECEIVED = 0;
+					  FIRST = 0;
+
+					  if (!isSelfSetup)
+					  {
+						  setupScreen();
+						  isSelfSetup = 1;
+					  }
+					  displayActiveHR();
+					  HAL_Delay(500);
+
+					  if (!SOS_FLAG)
+					  {
+						  start30101();
+					  }
 				  }
 			  }
+			  GPS_FLAG = 0;
 		  }
-		  GPS_FLAG = 0;
 	  }
-	  /*
-	  else if(HR_FLAG)
+	  else if (GPS_READY && HR_READY) //send to screen
 	  {
-		  uint8_t received_data[MAX_BUFF];
-		  HR_READ(received_data);
-		  testScreen();
-		  HR_FLAG = 0;
+		  NVIC_DisableIRQ(USART1_IRQn);
+		  packet_create(); //send packet to BST
+		  GPS_READY = 0;
+		  HR_READY = 0;
+		  NVIC_EnableIRQ(USART1_IRQn);
 	  }
-	  */
 	  else if(LORA_FLAG)
 	  {
+		  if (!isSelfSetup)
+		  {
+			  setupScreen();
+			  isSelfSetup = 1;
+		  }
 		  receiveData();
 		  LORA_FLAG = 0;
 	  }
@@ -652,8 +664,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		else
 		{
 			HR_FLAG = 0;
+			HR_READY = 1;
 			//testScreen();
+			if (!isSelfSetup)
+			{
+				setupScreen();
+				isSelfSetup = 1;
+			}
 			user1Info(heartrate, SPO2);
+			removeActiveHR();
 			NVIC_DisableIRQ(EXTI4_15_IRQn);
 			NVIC_EnableIRQ(EXTI0_1_IRQn);
 			NVIC_EnableIRQ(USART1_IRQn);

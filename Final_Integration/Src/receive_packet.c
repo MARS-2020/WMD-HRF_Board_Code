@@ -6,6 +6,8 @@
 
 uint8_t device_number = '1';
 uint8_t user_set[] = "User Data Set!\r\n";
+extern uint8_t NAME_RECEIVED;
+extern uint8_t LORA_RECEIVED;
 
 void parse_packet(uint8_t* buffer) {
     if(buffer[2] != device_number) return;
@@ -14,6 +16,7 @@ void parse_packet(uint8_t* buffer) {
         char userName[15];
         memcpy(&userName, &buffer[4], 15);
         setUserName(userName);
+        NAME_RECEIVED = 1;
         //sendPacket(user_set, sizeof(user_set));
     }
     
@@ -30,6 +33,7 @@ void parse_packet(uint8_t* buffer) {
         memcpy(&distance, &buffer[12], 4);
         memcpy(&distance[4], &buffer[17], 2);
         updateScreen(hr, spo2, distance, user);
+        LORA_RECEIVED = 1;
     }
 }
 

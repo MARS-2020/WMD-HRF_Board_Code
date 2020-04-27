@@ -1,8 +1,9 @@
-lora.c:30:6:writeReg	32	static
-lora.c:44:9:readReg	32	static
-lora.c:60:6:readFIFO	40	static
-lora.c:73:6:receiveData	8	static
-lora.c:94:6:writeReg_Burst	40	static
-lora.c:115:6:sendPacket	16	static
-lora.c:149:6:LORA_INIT	8	static
-lora.c:186:9:valid	0	static
+lora.c:37:6:writeReg	32	static
+lora.c:51:9:readReg	32	static
+lora.c:67:6:readFIFO	40	static
+lora.c:80:6:receiveData	8	static
+lora.c:101:6:writeReg_Burst	40	static
+lora.c:122:6:sendPacket	16	static
+lora.c:159:6:LORA_INIT	8	static
+lora.c:196:9:valid	0	static
+lora.c:205:6:packet_create	64	static

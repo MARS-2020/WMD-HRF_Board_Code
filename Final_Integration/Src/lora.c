@@ -22,6 +22,13 @@ uint8_t headerFlags = 0;
 uint8_t receive[80]; //receive data buffer
 uint8_t toParse[41];
 
+extern char latitude[10];
+extern char longitude[11];
+extern char longDir[2];
+extern char latDir[2];
+extern char fix[2];
+extern uint16_t heartrate;
+extern uint16_t SPO2;
 extern SPI_HandleTypeDef hspi1;
 
 
@@ -136,7 +143,7 @@ void sendPacket(uint8_t data[], uint8_t size)
 
 	writeReg(RH_RF95_REG_12_IRQ_FLAGS, 0xFF); //clear txdone
 	writeReg(RH_RF95_REG_01_OP_MODE, 0x03); //TX Mode
-	writeReg(RH_RF95_REG_40_DIO_MAPPING1, 0x40); //DIO0
+	//writeReg(RH_RF95_REG_40_DIO_MAPPING1, 0x40); //DIO0
 
 	//HAL_Delay(10);
 	while(readReg(RH_RF95_REG_12_IRQ_FLAGS) != 0x08);
@@ -144,6 +151,9 @@ void sendPacket(uint8_t data[], uint8_t size)
 	writeReg(RH_RF95_REG_01_OP_MODE, 0x01); //STDBY
 	writeReg(RH_RF95_REG_12_IRQ_FLAGS, 0xFF); //clear txdone
 	//HAL_Delay(10);
+
+	writeReg(RH_RF95_REG_01_OP_MODE, 0x05);
+	writeReg(RH_RF95_REG_40_DIO_MAPPING1, 0x00);
 }
 
 void LORA_INIT(void)
@@ -190,4 +200,33 @@ uint8_t valid(uint8_t interrupts)
 		return 0;
 	}
 	return 1;
+}
+
+void packet_create(void) {
+    uint8_t packet[41];
+    packet[0] = 'y';
+    packet[1] = ',';
+    packet[2] = '1'; //device number
+    packet[3] = ',';
+    packet[4] = ((heartrate/100) % 10) + '0';
+    packet[5] = ((heartrate/10) % 10) + '0';
+    packet[6] = (heartrate % 10) + '0';
+    packet[7] = ',';
+    packet[8] = ((SPO2/100) % 10) + '0';
+    packet[9] = ((SPO2/10) % 10) + '0';
+    packet[10] = (SPO2 % 10) + '0';
+    packet[11] = ',';
+    memcpy(&packet[12], &latitude[0], 9);
+    packet[21] = ',';
+    packet[22] = latDir[0];
+    packet[23] = ',';
+    memcpy(&packet[24], &longitude[0], 10);
+    packet[34] = ',';
+    packet[35] = longDir[0];
+    packet[36] = ',';
+    packet[37] = fix[0];
+    packet[38] = ',';
+    packet[39] = '\r';
+    packet[40] = '\n';
+    sendPacket(packet, sizeof(packet));
 }

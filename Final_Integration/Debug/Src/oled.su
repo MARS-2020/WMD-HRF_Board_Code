@@ -9,3 +9,5 @@ oled.c:251:6:setUserName	24	static
 oled.c:264:6:sendSOS	24	static
 oled.c:275:6:clearSOS	24	static
 oled.c:284:6:user1Info	48	static
+oled.c:323:6:displayActiveHR	24	static
+oled.c:334:6:removeActiveHR	24	static
