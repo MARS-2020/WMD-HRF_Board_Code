@@ -191,13 +191,13 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  if ((&huart1)->RxState == HAL_UART_STATE_READY)
+	  {
+		  HAL_UART_Receive_DMA(&huart1, tempdata, sizeof(tempdata)/sizeof(tempdata[0]));
+	  }
+
 	  if (LORA_RECEIVED || (NAME_RECEIVED && FIRST))
 	  {
-		  if ((&huart1)->RxState == HAL_UART_STATE_READY)
-		  {
-			  HAL_UART_Receive_DMA(&huart1, tempdata, sizeof(tempdata)/sizeof(tempdata[0]));
-		  }
-
 		  if(GPS_FLAG && (!GPS_READY))
 		  {
 			  uint8_t found = 0;
@@ -231,6 +231,7 @@ int main(void)
 				  if (parseData())
 				  {
 					  GPS_READY = 1;
+					  NAME_RECEIVED = 0;
 					  LORA_RECEIVED = 0;
 					  FIRST = 0;
 
@@ -253,11 +254,11 @@ int main(void)
 	  }
 	  else if (GPS_READY && HR_READY) //send to screen
 	  {
-		  NVIC_DisableIRQ(USART1_IRQn);
+		  //NVIC_DisableIRQ(USART1_IRQn);
 		  packet_create(); //send packet to BST
 		  GPS_READY = 0;
 		  HR_READY = 0;
-		  NVIC_EnableIRQ(USART1_IRQn);
+		  //NVIC_EnableIRQ(USART1_IRQn);
 	  }
 	  else if(LORA_FLAG)
 	  {
@@ -660,6 +661,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		if(!HR_FLAG)
 		{
 			NVIC_EnableIRQ(EXTI4_15_IRQn);
+			return;
 		}
 		else
 		{
@@ -673,14 +675,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 			}
 			user1Info(heartrate, SPO2);
 			removeActiveHR();
-			NVIC_DisableIRQ(EXTI4_15_IRQn);
-			NVIC_EnableIRQ(EXTI0_1_IRQn);
-			NVIC_EnableIRQ(USART1_IRQn);
-			NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
 		}
-		return; //since doing heart rate, return
 	}
-	if (GPIO_Pin == GPIO_PIN_1) //LORA RECEIVE
+	else if (GPIO_Pin == GPIO_PIN_1) //LORA RECEIVE
 	{
 		LORA_FLAG = 1;
 	}

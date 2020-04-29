@@ -348,7 +348,7 @@ void start()
 
 void shut30101()
 {
-	/*
+
 	uint8_t arr_shut[3] = {0x41, 0x03, 0x09};
 	uint8_t received[2] = {-3, -3};
 	read_cmd(arr_shut, sizeof(arr_shut), received);
@@ -358,8 +358,8 @@ void shut30101()
 	}
 
 	received[1] = received[1]  | (1<<7);
-	*/
-	uint8_t arr_shut2[4] = {0x40, 0x03, 0x09, 0x87};
+
+	uint8_t arr_shut2[4] = {0x40, 0x03, 0x09, received[1]};
 	if(write_cmd(arr_shut2, sizeof(arr_shut2)) != 0x00)
 	{
 		return;

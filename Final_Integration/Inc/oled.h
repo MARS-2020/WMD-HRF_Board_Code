@@ -15,7 +15,7 @@
 	void sendDATA(uint8_t *data, uint16_t size);
 	void sendString(char *string, uint8_t header);
 	void clearScreen();
-	void updateScreen(char* hr, char* spo2, char* distance, char* user);
+	void updateScreen(char* hr, char* spo2, char* distance, char* direction, char* user);
 	void setUserName(char* userName);
 	void sendSOS();
 	void clearSOS();

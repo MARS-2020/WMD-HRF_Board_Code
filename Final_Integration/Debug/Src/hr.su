@@ -7,8 +7,8 @@ hr.c:455:9:write_cmd	32	static
 hr.c:65:9:HR_INIT	32	static
 hr.c:307:6:stop	16	static
 hr.c:328:6:start	16	static
-hr.c:349:6:shut30101	16	static
 hr.c:473:6:read_cmd	24	static
+hr.c:349:6:shut30101	32	static
 hr.c:371:6:start30101	32	static
 hr.c:487:9:fill_buff	24	static
 hr.c:152:9:HR_READ	48	static

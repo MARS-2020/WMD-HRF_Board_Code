@@ -25,6 +25,7 @@ HAL_GPIO_WritePin(oled_NSS_GPIO_Port, oled_NSS_Pin, GPIO_PIN_SET);
 	  sendDATA(MARSBMP, (uint16_t)sizeof(MARSBMP));
 }
 
+/*
 void setupScreen(){
 
 
@@ -63,6 +64,49 @@ void setupScreen(){
 	col[1]=0x00;
 	col[2]=0x7F;
 	message = "   @*@    %       @M     ";
+	sendCMD(page,(uint16_t)sizeof(page));
+	sendCMD(col, (uint16_t)sizeof(col));
+	sendString(message,0x00);
+}
+*/
+
+void setupScreen(){
+
+	uint8_t page[] = {0x22, 0x00,0x00};
+
+	uint8_t col[]= {0x21, 0x00, 0x7F};
+	clearScreen();
+	sendCMD(page,(uint16_t)sizeof(page));
+
+	sendCMD(col, (uint16_t)sizeof(col));
+	char* message = "   @*@    %          ";
+	sendString(message,0x00);
+	page[1]=0x01;
+	page[2]=0x01;
+	col[1]=0x00;
+	col[2]=0x7F;
+	sendCMD(page,(uint16_t)sizeof(page));
+	sendCMD(col, (uint16_t)sizeof(col));
+	message="                     ";
+	sendString(message,0x01);
+
+
+
+	message = "     ";
+	page[1]=0x02;
+	page[2]=0x02;
+
+	col[1]=0x00;
+	col[2]=0x7F;
+	sendCMD(page,(uint16_t)sizeof(page));
+	sendCMD(col, (uint16_t)sizeof(col));
+	sendString(message,0x00);
+
+	page[1]=0x03;
+	page[2]=0x03;
+	col[1]=0x00;
+	col[2]=0x7F;
+	message = "   @*@    %     @M     ";
 	sendCMD(page,(uint16_t)sizeof(page));
 	sendCMD(col, (uint16_t)sizeof(col));
 	sendString(message,0x00);
@@ -197,6 +241,62 @@ void sendString(char *string, uint8_t header){
 	}
 }
 
+void updateScreen(char* hr, char* spo2, char* distance, char* direction, char* user){
+
+	uint8_t page[] = {0x22, 0x00,0x00};
+
+	uint8_t col[]= {0x21, 0x00, 0x7F};
+
+	//hr col is 0-18
+	//spo2 col is - 33-51
+	//distance col is for
+	if(user[0]=='1'){
+	page[1]=0x00;
+	page[2]=0x00;
+	col[1]=0x00;
+	col[2]=0x12;
+	sendCMD(page,(uint16_t)sizeof(page));
+	sendCMD(col, (uint16_t)sizeof(col));
+	sendString(hr,0x00);
+	col[1]=0x21;
+	col[2]=0x32;
+	sendCMD(page,(uint16_t)sizeof(page));
+
+	sendCMD(col, (uint16_t)sizeof(col));
+	sendString(spo2,0x00);
+	col[1]=0x61;
+	col[2]=0x79;
+	sendCMD(col, (uint16_t)sizeof(col));
+	sendString(distance,0x00);
+
+
+	}
+	if(user[0]=='2'){
+
+	page[1]=0x03;
+	page[2]=0x03;
+	col[1]=0x00;
+	col[2]=0x12;
+	sendCMD(page,(uint16_t)sizeof(page));
+	sendCMD(col, (uint16_t)sizeof(col));
+	sendString(hr,0x00);
+	col[1]=0x21;
+	col[2]=0x32;
+	sendCMD(col, (uint16_t)sizeof(col));
+	sendString(spo2,0x00);
+	col[1]=0x41;
+	col[2]=0x71;
+	sendCMD(col, (uint16_t)sizeof(col));
+	sendString(distance,0x00);
+
+	col[1]=0x65;
+	col[2]=0x71;
+	sendCMD(col, (uint16_t)sizeof(col));
+	sendString(direction,0x00);
+	}
+}
+
+/*
 void updateScreen(char* hr, char* spo2, char* distance, char* user){
 
 	uint8_t page[] = {0x22, 0x00,0x00};
@@ -246,6 +346,7 @@ void updateScreen(char* hr, char* spo2, char* distance, char* user){
 		sendString(distance,0x00);
 	}
 }
+*/
 
 
 void setUserName(char* userName){
@@ -317,7 +418,7 @@ void user1Info(uint8_t hr, uint8_t spo2){
     }
 
     char user[1] = {'1'};
-    updateScreen(selfHR, selfSpo2, fix, user);
+    updateScreen(selfHR, selfSpo2, fix, fix, user);
 }
 
 void displayActiveHR(void)

@@ -23,16 +23,19 @@ void parse_packet(uint8_t* buffer) {
     if(buffer[0] == 'x') { //Info Packet
         char hr[4];
         char spo2[4];
-        char distance[6];
+        char distance[5];
+        char direction[3];
         hr[3] = '\0';
         spo2[3] = '\0';
+        distance[4] = '\0';
+        direction[2] = '\0';
         char user[1];
         user[0] = '2';
         memcpy(&hr, &buffer[4], 3);
         memcpy(&spo2, &buffer[8], 3);
         memcpy(&distance, &buffer[12], 4);
-        memcpy(&distance[4], &buffer[17], 2);
-        updateScreen(hr, spo2, distance, user);
+        memcpy(&direction, &buffer[17], 2);
+        updateScreen(hr, spo2, distance, direction, user);
         LORA_RECEIVED = 1;
     }
 }
